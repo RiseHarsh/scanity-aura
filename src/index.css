@@ -211,9 +211,8 @@
     -webkit-text-fill-color: transparent;
     animation: hologram-flicker 2s ease-in-out infinite;
   }
-}
 
-@layer base {
+  /* Base Styles */
   * {
     @apply border-border;
   }
@@ -244,3 +243,4 @@
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.8);
   }
+}
