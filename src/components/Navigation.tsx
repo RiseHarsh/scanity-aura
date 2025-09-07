@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Scan, Shield, BarChart3, Blocks, Info } from "lucide-react";
+import { Scan, Shield, BarChart3, Blocks, Info, Brain } from "lucide-react";
 
 export const Navigation = () => {
   const location = useLocation();
@@ -10,6 +10,7 @@ export const Navigation = () => {
     { path: "/verify", label: "Verify", icon: Scan },
     { path: "/reports", label: "Reports", icon: BarChart3 },
     { path: "/explorer", label: "Explorer", icon: Blocks },
+    { path: "/models", label: "Models", icon: Brain },
     { path: "/about", label: "About", icon: Info },
   ];
 

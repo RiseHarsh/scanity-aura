@@ -5,12 +5,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Scan, Shield, Copy, CheckCircle, AlertCircle, Info, ChevronDown, Brain, Lock, Clock, TrendingUp, Download, Zap } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Scan, Shield, Copy, CheckCircle, AlertCircle, Info, ChevronDown, Brain, Lock, Clock, TrendingUp, Download, Zap, ExternalLink, Globe, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface VerificationResult {
-  isAiGenerated: boolean;
+interface ModelPrediction {
+  name: string;
+  displayName: string;
+  prediction: boolean;
   confidence: number;
+  description: string;
+}
+
+interface WebReference {
+  title: string;
+  url: string;
+  snippet: string;
+  similarity: number;
+}
+
+interface VerificationResult {
+  models: ModelPrediction[];
+  finalDecision: boolean;
+  overallConfidence: number;
+  majorityVote: {
+    aiGenerated: number;
+    humanWritten: number;
+  };
+  webReferences: WebReference[];
   blockchainHash: string;
   timestamp: string;
 }
@@ -21,17 +43,89 @@ export default function Verify() {
   const [result, setResult] = useState<VerificationResult | null>(null);
   const { toast } = useToast();
 
+  const simulateGoogleSearch = async (content: string): Promise<WebReference[]> => {
+    // Simulate Google Custom Search API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const mockReferences: WebReference[] = [
+      {
+        title: "AI-Generated Content Detection Methods",
+        url: "https://example.com/ai-detection",
+        snippet: "Recent advances in detecting AI-generated text using neural networks...",
+        similarity: Math.floor(Math.random() * 30) + 15
+      },
+      {
+        title: "Natural Language Processing Techniques",
+        url: "https://example.com/nlp-techniques",
+        snippet: "Understanding the patterns in human vs artificial text generation...",
+        similarity: Math.floor(Math.random() * 25) + 10
+      },
+      {
+        title: "Content Authenticity Framework",
+        url: "https://example.com/authenticity",
+        snippet: "Building trust in digital content through verification systems...",
+        similarity: Math.floor(Math.random() * 20) + 8
+      }
+    ];
+    
+    return mockReferences;
+  };
+
   const handleVerify = async () => {
     if (!text.trim()) return;
     
     setIsVerifying(true);
     
-    // Simulate AI verification process
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate AI verification process with 3 models
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Generate predictions for each model
+    const models: ModelPrediction[] = [
+      {
+        name: "fastdetectgpt",
+        displayName: "FastDetectGPT",
+        prediction: Math.random() > 0.4,
+        confidence: Math.floor(Math.random() * 25) + 70,
+        description: "Optimized for speed, uses statistical analysis of token probabilities"
+      },
+      {
+        name: "detectgpt",
+        displayName: "DetectGPT",
+        prediction: Math.random() > 0.3,
+        confidence: Math.floor(Math.random() * 25) + 75,
+        description: "Gold standard detector using curvature-based analysis"
+      },
+      {
+        name: "gtlr",
+        displayName: "GTLR",
+        prediction: Math.random() > 0.5,
+        confidence: Math.floor(Math.random() * 20) + 80,
+        description: "Graph-based Text Language Recognition with transformer architecture"
+      }
+    ];
+    
+    // Calculate majority vote
+    const aiVotes = models.filter(m => m.prediction).length;
+    const humanVotes = models.filter(m => !m.prediction).length;
+    const finalDecision = aiVotes > humanVotes;
+    
+    // Calculate overall confidence based on agreement
+    const agreement = Math.max(aiVotes, humanVotes) / models.length;
+    const avgConfidence = models.reduce((sum, m) => sum + m.confidence, 0) / models.length;
+    const overallConfidence = Math.floor(avgConfidence * agreement);
+    
+    // Get web references
+    const webReferences = await simulateGoogleSearch(text);
     
     const mockResult: VerificationResult = {
-      isAiGenerated: Math.random() > 0.5,
-      confidence: Math.floor(Math.random() * 30) + 70,
+      models,
+      finalDecision,
+      overallConfidence,
+      majorityVote: {
+        aiGenerated: aiVotes,
+        humanWritten: humanVotes
+      },
+      webReferences,
       blockchainHash: "0x" + Math.random().toString(16).substring(2, 42),
       timestamp: new Date().toISOString(),
     };
@@ -55,8 +149,8 @@ export default function Verify() {
     
     const reportData = {
       analysis: {
-        contentType: result.isAiGenerated ? "AI-Generated" : "Human-Written",
-        confidence: `${result.confidence}%`,
+        contentType: result.finalDecision ? "AI-Generated" : "Human-Written",
+        confidence: `${result.overallConfidence}%`,
         timestamp: new Date(result.timestamp).toLocaleString(),
       },
       blockchain: {
@@ -71,16 +165,31 @@ export default function Verify() {
       }
     };
 
-    const reportContent = `
-ScanIt Verification Report
-==========================
+    const modelResults = result.models.map(model => 
+      `├─ ${model.displayName}: ${model.prediction ? 'AI-Generated' : 'Human-Written'} (${model.confidence}%)`
+    ).join('\n');
 
-CONTENT ANALYSIS
-├─ Classification: ${reportData.analysis.contentType}
-├─ Confidence Level: ${reportData.analysis.confidence}
+    const webReferences = result.webReferences.map((ref, index) => 
+      `├─ ${index + 1}. ${ref.title} (${ref.similarity}% similarity)\n│  ${ref.url}`
+    ).join('\n');
+
+    const reportContent = `
+ScanIt Advanced Verification Report
+==================================
+
+MULTI-MODEL ANALYSIS
+├─ Final Decision: ${reportData.analysis.contentType}
+├─ Overall Confidence: ${reportData.analysis.confidence}
+├─ Majority Vote: ${result.majorityVote.aiGenerated} AI vs ${result.majorityVote.humanWritten} Human
 ├─ Analysis Date: ${reportData.analysis.timestamp}
 ├─ Text Length: ${reportData.content.textLength} characters
 └─ Word Count: ${reportData.content.wordsCount} words
+
+INDIVIDUAL MODEL RESULTS
+${modelResults}
+
+WEB REFERENCE ANALYSIS
+${webReferences}
 
 BLOCKCHAIN VERIFICATION
 ├─ Hash: ${reportData.blockchain.hash}
@@ -100,15 +209,15 @@ Report ID: ${result.blockchainHash.slice(0, 16)}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `scanit-report-${result.blockchainHash.slice(0, 8)}.txt`;
+    a.download = `scanit-advanced-report-${result.blockchainHash.slice(0, 8)}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Report Downloaded",
-      description: "Verification report saved successfully",
+      title: "Advanced Report Downloaded",
+      description: "Multi-model verification report saved successfully",
     });
   };
 
@@ -307,120 +416,192 @@ Report ID: ${result.blockchainHash.slice(0, 16)}
             {result && (
               <Card className="glass-panel p-8 animate-fade-in">
                 <div className="space-y-6">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
-                      <Shield className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold">Verification Complete</h3>
-                      <p className="text-muted-foreground">Analysis results below</p>
-                    </div>
-                  </div>
-
-                  {/* AI Detection Result */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-6 rounded-lg bg-muted/30 border border-primary/20">
-                      <div className="flex items-center space-x-4">
-                        {result.isAiGenerated ? (
-                          <AlertCircle className="w-8 h-8 text-destructive" />
-                        ) : (
-                          <CheckCircle className="w-8 h-8 text-primary" />
-                        )}
-                        <div>
-                          <p className="font-semibold text-lg">
-                            {result.isAiGenerated ? "AI-Generated Content" : "Human-Written Content"}
-                          </p>
-                          <p className="text-muted-foreground">
-                            Confidence: {result.confidence}%
-                          </p>
-                        </div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-primary-foreground" />
                       </div>
-                      <Badge 
-                        variant={result.isAiGenerated ? "destructive" : "default"}
-                        className="px-4 py-2 text-sm font-medium animate-hologram-flicker"
-                      >
-                        {result.isAiGenerated ? "AI Detected" : "Human Verified"}
-                      </Badge>
-                    </div>
-
-                    {/* Detailed Result Explanation */}
-                    <Card className="bg-accent/5 border-accent/20 p-4">
-                      <div className="flex items-start space-x-3">
-                        <Info className="w-5 h-5 text-accent mt-0.5" />
-                        <div className="space-y-2 text-sm">
-                          <h4 className="font-medium text-foreground">What This Means:</h4>
-                          {result.isAiGenerated ? (
-                            <div className="space-y-2 text-muted-foreground">
-                              <p><strong className="text-foreground">AI-Generated Detection:</strong> Our analysis indicates this content was likely produced by an artificial intelligence system.</p>
-                              <p><strong className="text-foreground">Key Indicators:</strong> Pattern recognition suggests artificial linguistic patterns, repetitive structures, or lack of human-specific nuances.</p>
-                              <p><strong className="text-foreground">Recommended Actions:</strong> Verify source, cross-reference with known publications, consider requesting original authorship documentation.</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-2 text-muted-foreground">
-                              <p><strong className="text-foreground">Human-Written Verification:</strong> Analysis suggests this content exhibits natural human writing characteristics.</p>
-                              <p><strong className="text-foreground">Key Indicators:</strong> Natural flow, human-specific expressions, creative variations, and authentic voice patterns detected.</p>
-                              <p><strong className="text-foreground">Confidence Level:</strong> High likelihood of authentic human authorship based on linguistic analysis.</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Blockchain Record */}
-                  <div className="space-y-4">
-                    <div className="p-6 rounded-lg bg-gradient-glass border border-accent/30">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                          <p className="font-semibold text-accent">Blockchain Verification</p>
-                          <p className="text-sm text-muted-foreground font-mono">
-                            {result.blockchainHash}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Verified: {new Date(result.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={copyHash}
-                          className="border-accent/50 hover:bg-accent/10"
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy Hash
-                        </Button>
+                      <div>
+                        <h3 className="text-xl font-semibold">Multi-Model Verification Complete</h3>
+                        <p className="text-muted-foreground">Advanced AI detection with consensus analysis</p>
                       </div>
                     </div>
-
-                    {/* Blockchain Explanation */}
-                    <Card className="bg-secondary/5 border-secondary/20 p-4">
-                      <div className="flex items-start space-x-3">
-                        <Clock className="w-5 h-5 text-secondary mt-0.5" />
-                        <div className="space-y-2 text-sm">
-                          <h4 className="font-medium text-foreground">Blockchain Record Details:</h4>
-                          <div className="space-y-2 text-muted-foreground">
-                            <p><strong className="text-foreground">Permanent Record:</strong> This verification is now permanently stored on the blockchain and cannot be altered or deleted.</p>
-                            <p><strong className="text-foreground">Hash Usage:</strong> Use this hash to independently verify this analysis result at any time. Share it as proof of verification.</p>
-                            <p><strong className="text-foreground">Timestamp Proof:</strong> The blockchain timestamp proves when this verification occurred, providing temporal authenticity.</p>
-                            <p><strong className="text-foreground">Audit Trail:</strong> This record contributes to a comprehensive audit trail for content authenticity tracking.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Download Report Button */}
-                  <div className="pt-6 border-t border-border/50">
-                    <Button
-                      onClick={downloadReport}
-                      variant="outline"
-                      size="lg"
-                      className="w-full bg-gradient-to-r from-secondary/20 to-accent/20 hover:from-secondary/30 hover:to-accent/30 border-accent/40 hover:border-accent/60 text-foreground hover:text-white transition-all duration-300 neon-border"
-                    >
-                      <Download className="w-5 h-5 mr-2" />
-                      <span className="font-semibold">Download Verification Report</span>
+                    <Button onClick={downloadReport} variant="outline" className="flex items-center space-x-2">
+                      <Download className="w-4 h-4" />
+                      <span>Download Report</span>
                     </Button>
                   </div>
+
+                  {/* Main Result */}
+                  <div className="flex items-center justify-between p-6 rounded-lg bg-gradient-to-r from-muted/50 to-muted/30 border border-primary/20">
+                    <div className="flex items-center space-x-4">
+                      {result.finalDecision ? (
+                        <AlertCircle className="w-8 h-8 text-destructive" />
+                      ) : (
+                        <CheckCircle className="w-8 h-8 text-primary" />
+                      )}
+                      <div>
+                        <p className="font-semibold text-lg">
+                          {result.finalDecision ? "AI-Generated Content" : "Human-Written Content"}
+                        </p>
+                        <p className="text-muted-foreground">
+                          Consensus Confidence: {result.overallConfidence}% • Majority Vote: {Math.max(result.majorityVote.aiGenerated, result.majorityVote.humanWritten)}/3 models
+                        </p>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant={result.finalDecision ? "destructive" : "default"}
+                      className="px-4 py-2 text-sm font-medium animate-hologram-flicker"
+                    >
+                      {result.finalDecision ? "AI Detected" : "Human Verified"}
+                    </Badge>
+                  </div>
+
+                  {/* Detailed Analysis Tabs */}
+                  <Tabs defaultValue="models" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="models" className="flex items-center space-x-2">
+                        <Brain className="w-4 h-4" />
+                        <span>Model Analysis</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="web" className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4" />
+                        <span>Web References</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="blockchain" className="flex items-center space-x-2">
+                        <Lock className="w-4 h-4" />
+                        <span>Blockchain</span>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="models" className="space-y-4">
+                      <div className="grid gap-4">
+                        {result.models.map((model, index) => (
+                          <Card key={model.name} className="p-4 bg-muted/20 border border-primary/10">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-3 h-3 rounded-full ${model.prediction ? 'bg-destructive' : 'bg-primary'}`} />
+                                <h4 className="font-semibold">{model.displayName}</h4>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant={model.prediction ? "destructive" : "default"} className="text-xs">
+                                  {model.prediction ? "AI" : "Human"}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">{model.confidence}%</span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{model.description}</p>
+                            <div className="mt-2 w-full bg-muted rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${model.prediction ? 'bg-destructive' : 'bg-primary'}`}
+                                style={{ width: `${model.confidence}%` }}
+                              />
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                      
+                      {/* Voting Summary */}
+                      <Card className="p-4 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <BarChart3 className="w-5 h-5 text-primary" />
+                            <span className="font-medium">Consensus Analysis</span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {result.majorityVote.aiGenerated} AI votes • {result.majorityVote.humanWritten} Human votes
+                          </div>
+                        </div>
+                      </Card>
+                    </TabsContent>
+
+                    <TabsContent value="web" className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
+                          <Globe className="w-4 h-4" />
+                          <span>Content similarity analysis using Google Custom Search API</span>
+                        </div>
+                        
+                        {result.webReferences.length > 0 ? (
+                          <div className="grid gap-4">
+                            {result.webReferences.map((ref, index) => (
+                              <Card key={index} className="p-4 bg-muted/20 border border-primary/10">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <h4 className="font-medium text-sm line-clamp-1">{ref.title}</h4>
+                                      <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{ref.snippet}</p>
+                                    <a 
+                                      href={ref.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-primary hover:underline line-clamp-1"
+                                    >
+                                      {ref.url}
+                                    </a>
+                                  </div>
+                                  <Badge variant="outline" className="ml-3 text-xs">
+                                    {ref.similarity}% match
+                                  </Badge>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <Card className="p-6 text-center bg-muted/20 border border-primary/10">
+                            <Globe className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">No significant web references found</p>
+                            <p className="text-xs text-muted-foreground mt-1">This content appears to be unique</p>
+                          </Card>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="blockchain" className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="p-6 rounded-lg bg-gradient-glass border border-accent/30">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-2">
+                              <p className="font-semibold text-accent">Blockchain Verification</p>
+                              <p className="text-sm text-muted-foreground font-mono">
+                                {result.blockchainHash}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Verified: {new Date(result.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={copyHash}
+                              className="border-accent/50 hover:bg-accent/10"
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy Hash
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Blockchain Explanation */}
+                        <Card className="bg-secondary/5 border-secondary/20 p-4">
+                          <div className="flex items-start space-x-3">
+                            <Clock className="w-5 h-5 text-secondary mt-0.5" />
+                            <div className="space-y-2 text-sm">
+                              <h4 className="font-medium text-foreground">Blockchain Record Details:</h4>
+                              <div className="space-y-2 text-muted-foreground">
+                                <p><strong className="text-foreground">Permanent Record:</strong> This verification is now permanently stored on the blockchain and cannot be altered or deleted.</p>
+                                <p><strong className="text-foreground">Hash Usage:</strong> Use this hash to independently verify this analysis result at any time. Share it as proof of verification.</p>
+                                <p><strong className="text-foreground">Timestamp Proof:</strong> The blockchain timestamp proves when this verification occurred, providing temporal authenticity.</p>
+                                <p><strong className="text-foreground">Audit Trail:</strong> This record contributes to a comprehensive audit trail for content authenticity tracking.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </Card>
             )}

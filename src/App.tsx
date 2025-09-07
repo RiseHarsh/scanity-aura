@@ -8,6 +8,7 @@ import Verify from "./pages/Verify";
 import Reports from "./pages/Reports";
 import BlockchainExplorer from "./pages/BlockchainExplorer";
 import About from "./pages/About";
+import ModelDetails from "./pages/ModelDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/verify" element={<Verify />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/explorer" element={<BlockchainExplorer />} />
+          <Route path="/models" element={<ModelDetails />} />
           <Route path="/about" element={<About />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
