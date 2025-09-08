@@ -1,11 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Scan, Shield, BarChart3, Blocks, Info, Brain, User } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Scan, Shield, BarChart3, Blocks, Info, Brain } from "lucide-react";
 
 export const Navigation = () => {
   const location = useLocation();
-  const { user } = useAuth();
 
   const navItems = [
     { path: "/", label: "Home", icon: Shield },
@@ -44,22 +42,8 @@ export const Navigation = () => {
             ))}
           </div>
 
-          {/* User Actions */}
+          {/* CTA Button */}
           <div className="flex items-center space-x-4">
-            {user ? (
-              <Link to="/profile">
-                <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                  <User className="w-4 h-4" />
-                  <span>Profile</span>
-                </Button>
-              </Link>
-            ) : (
-              <Link to="/auth">
-                <Button className="neon-border bg-gradient-primary hover:shadow-neon transition-all duration-300">
-                  Sign In
-                </Button>
-              </Link>
-            )}
             <Link to="/verify">
               <Button className="neon-border bg-gradient-primary hover:shadow-neon transition-all duration-300">
                 Start Verification
