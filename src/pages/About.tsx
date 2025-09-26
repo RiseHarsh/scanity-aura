@@ -6,6 +6,24 @@ import securityShield from "@/assets/security-shield.jpg";
 import aiBrainIso from "@/assets/ai-brain-iso.jpg";
 import blockchainCube from "@/assets/blockchain-cube.jpg";
 
+const teamMembers = [
+  {
+    name: "Dr. Sarah Chen",
+    role: "AI Research Lead",
+    bio: "Former researcher at MIT AI Lab, specializing in content authenticity detection."
+  },
+  {
+    name: "Marcus Rodriguez",
+    role: "Blockchain Architect", 
+    bio: "Ethereum core contributor with 8+ years in distributed systems."
+  },
+  {
+    name: "Elena Vasquez",
+    role: "Security Engineer",
+    bio: "Cybersecurity expert with focus on cryptographic verification systems."
+  }
+];
+
 export default function About() {
   return (
     <div className="min-h-screen bg-background">
@@ -103,6 +121,32 @@ export default function About() {
                   ensuring data integrity and user privacy.
                 </p>
               </Card>
+            </div>
+          </section>
+
+          {/* Team */}
+          <section className="mb-20">
+            <h2 className="text-3xl font-bold text-center mb-12 holographic-text">
+              Leadership Team
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {teamMembers.map((member, index) => (
+                <Card 
+                  key={member.name} 
+                  className="glass-panel p-6 text-center animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="w-16 h-16 rounded-full bg-gradient-primary mx-auto mb-4 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary-foreground">
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
+                  <p className="text-primary font-medium mb-3">{member.role}</p>
+                  <p className="text-sm text-muted-foreground">{member.bio}</p>
+                </Card>
+              ))}
             </div>
           </section>
 
