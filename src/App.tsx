@@ -13,6 +13,7 @@ import About from "./pages/About";
 import ModelDetails from "./pages/ModelDetails";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,11 @@ const App = () => (
             <Route path="/profile" element={
               <AuthGuard>
                 <Profile />
+              </AuthGuard>
+            } />
+            <Route path="/settings" element={
+              <AuthGuard>
+                <Settings />
               </AuthGuard>
             } />
             <Route path="/" element={

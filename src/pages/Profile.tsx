@@ -1,10 +1,11 @@
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Mail, Calendar, Shield } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { LogOut, Mail, Calendar, Shield, Key, Bell, History, Settings, LayoutDashboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Navigation } from '@/components/Navigation';
 
@@ -67,12 +68,58 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* Quick Actions */}
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <Card className="glass-panel border-0 hover:shadow-neural transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 mb-4">
+                  <LayoutDashboard className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Dashboard</h3>
+                <p className="text-sm text-muted-foreground mb-4">Overview of your activity</p>
+                <Link to="/reports">
+                  <Button variant="outline" size="sm" className="w-full">
+                    View Reports
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-panel border-0 hover:shadow-neural transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/20 mb-4">
+                  <History className="w-6 h-6 text-accent" />
+                </div>
+                <h3 className="font-semibold mb-2">Recent Activity</h3>
+                <p className="text-sm text-muted-foreground mb-4">Last verification: Today</p>
+                <Link to="/verify">
+                  <Button size="sm" className="w-full">
+                    Start Verification
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-panel border-0 hover:shadow-neural transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 mb-4">
+                  <Settings className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Settings</h3>
+                <p className="text-sm text-muted-foreground mb-4">Manage preferences</p>
+                <Button variant="outline" size="sm" className="w-full">
+                  Configure
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Profile Information */}
-          <Card className="glass-panel border-0">
+          <Card className="glass-panel border-0 mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary" />
-                Account Information
+                Basic Information
               </CardTitle>
               <CardDescription>
                 Your profile details and authentication status
@@ -128,12 +175,88 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
+          {/* Account Settings */}
+          <Card className="glass-panel border-0 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                Account Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your account security and preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <Key className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Password</p>
+                    <p className="text-sm text-muted-foreground">Change your password</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm">
+                  Update
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Notifications</p>
+                    <p className="text-sm text-muted-foreground">Manage email preferences</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm">
+                  Configure
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Verification History */}
+          <Card className="glass-panel border-0 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-primary" />
+                Verification History
+              </CardTitle>
+              <CardDescription>
+                Your recent content verification activities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                  <div>
+                    <p className="font-medium">Total Verifications</p>
+                    <p className="text-sm text-muted-foreground">Content checks completed</p>
+                  </div>
+                  <Badge variant="default">24</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                  <div>
+                    <p className="font-medium">Last Verification</p>
+                    <p className="text-sm text-muted-foreground">Today at 2:30 PM</p>
+                  </div>
+                  <Link to="/reports">
+                    <Button variant="outline" size="sm">
+                      View All Reports
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Actions */}
           <Card className="glass-panel border-0">
             <CardHeader>
               <CardTitle>Account Actions</CardTitle>
               <CardDescription>
-                Manage your account settings and security
+                Manage your account
               </CardDescription>
             </CardHeader>
             <CardContent>
