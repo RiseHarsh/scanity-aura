@@ -37,11 +37,7 @@ const App = () => (
                 <Settings />
               </AuthGuard>
             } />
-            <Route path="/" element={
-              <AuthGuard>
-                <Index />
-              </AuthGuard>
-            } />
+            <Route path="/" element={<Index />} />
             <Route path="/verify" element={
               <AuthGuard>
                 <Verify />
@@ -52,21 +48,9 @@ const App = () => (
                 <Reports />
               </AuthGuard>
             } />
-            <Route path="/explorer" element={
-              <AuthGuard>
-                <BlockchainExplorer />
-              </AuthGuard>
-            } />
-            <Route path="/models" element={
-              <AuthGuard>
-                <ModelDetails />
-              </AuthGuard>
-            } />
-            <Route path="/about" element={
-              <AuthGuard>
-                <About />
-              </AuthGuard>
-            } />
+            <Route path="/explorer" element={<BlockchainExplorer />} />
+            <Route path="/models" element={<ModelDetails />} />
+            <Route path="/about" element={<About />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
