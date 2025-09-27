@@ -9,7 +9,9 @@ import { Separator } from '@/components/ui/separator';
 import { Settings as SettingsIcon, Bell, Shield, Key, Mail, Save, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Navigation } from '@/components/Navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -19,17 +21,143 @@ export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [securityAlerts, setSecurityAlerts] = useState(true);
   const [reportDigest, setReportDigest] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   if (!user) {
     navigate('/auth');
     return null;
   }
 
-  const handleSaveSettings = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  // Load user preferences on mount
+  useEffect(() => {
+    loadUserPreferences();
+  }, [user]);
+
+  const loadUserPreferences = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading preferences:', error);
+        return;
+      }
+
+      if (data) {
+        setEmailNotifications(data.email_notifications);
+        setSecurityAlerts(data.security_alerts);
+        setReportDigest(data.report_digest);
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          email_notifications: emailNotifications,
+          security_alerts: securityAlerts,
+          report_digest: reportDigest,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save settings. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Settings Saved",
+          description: "Your preferences have been updated successfully.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Please fill in both password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Password Updated",
+          description: "Your password has been changed successfully.",
+        });
+        setShowPasswordDialog(false);
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -162,9 +290,59 @@ export default function Settings() {
                     </div>
                   </div>
                   {user.app_metadata?.provider !== 'google' && (
-                    <Button variant="outline" size="sm">
-                      Change Password
-                    </Button>
+                    <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Change Password
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Change Password</DialogTitle>
+                          <DialogDescription>
+                            Enter your new password below. Make sure it's at least 6 characters long.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="new-password">New Password</Label>
+                            <Input
+                              id="new-password"
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Enter new password"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                            <Input
+                              id="confirm-password"
+                              type="password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              placeholder="Confirm new password"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowPasswordDialog(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleChangePassword}
+                            disabled={loading}
+                          >
+                            {loading ? "Updating..." : "Update Password"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </div>
 
@@ -191,10 +369,11 @@ export default function Settings() {
             <CardContent className="pt-6">
               <Button
                 onClick={handleSaveSettings}
+                disabled={loading}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground group transition-all duration-300"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Save Settings
+                {loading ? "Saving..." : "Save Settings"}
               </Button>
             </CardContent>
           </Card>

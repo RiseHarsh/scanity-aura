@@ -41,6 +41,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          id: string
+          report_digest: boolean
+          security_alerts: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          report_digest?: boolean
+          security_alerts?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          report_digest?: boolean
+          security_alerts?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verifications: {
+        Row: {
+          blockchain_hash: string | null
+          confidence: number
+          content: string
+          created_at: string
+          id: string
+          is_ai_generated: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blockchain_hash?: string | null
+          confidence: number
+          content: string
+          created_at?: string
+          id?: string
+          is_ai_generated?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blockchain_hash?: string | null
+          confidence?: number
+          content?: string
+          created_at?: string
+          id?: string
+          is_ai_generated?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

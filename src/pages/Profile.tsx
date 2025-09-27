@@ -8,16 +8,54 @@ import { Separator } from '@/components/ui/separator';
 import { LogOut, Mail, Calendar, Shield, Key, Bell, History, Settings, LayoutDashboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Navigation } from '@/components/Navigation';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Profile() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [verificationCount, setVerificationCount] = useState(0);
+  const [recentVerifications, setRecentVerifications] = useState([]);
 
   if (!user) {
     navigate('/auth');
     return null;
   }
+
+  useEffect(() => {
+    loadUserVerifications();
+  }, [user]);
+
+  const loadUserVerifications = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('verifications')
+        .select('id, content, created_at, is_ai_generated')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error('Error loading verifications:', error);
+        return;
+      }
+
+      setRecentVerifications(data || []);
+      
+      // Get total count
+      const { count } = await supabase
+        .from('verifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      setVerificationCount(count || 0);
+    } catch (error) {
+      console.error('Error loading user verifications:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -107,7 +145,7 @@ export default function Profile() {
                 </div>
                 <h3 className="font-semibold mb-2">Settings</h3>
                 <p className="text-sm text-muted-foreground mb-4">Manage preferences</p>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/settings')}>
                   Configure
                 </Button>
               </CardContent>
@@ -195,7 +233,7 @@ export default function Profile() {
                     <p className="text-sm text-muted-foreground">Change your password</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
                   Update
                 </Button>
               </div>
@@ -208,7 +246,7 @@ export default function Profile() {
                     <p className="text-sm text-muted-foreground">Manage email preferences</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
                   Configure
                 </Button>
               </div>
@@ -223,30 +261,47 @@ export default function Profile() {
                 Verification History
               </CardTitle>
               <CardDescription>
-                Your recent content verification activities
+                Your recent content verification activities ({verificationCount} total)
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-                  <div>
-                    <p className="font-medium">Total Verifications</p>
-                    <p className="text-sm text-muted-foreground">Content checks completed</p>
-                  </div>
-                  <Badge variant="default">24</Badge>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-                  <div>
-                    <p className="font-medium">Last Verification</p>
-                    <p className="text-sm text-muted-foreground">Today at 2:30 PM</p>
-                  </div>
-                  <Link to="/reports">
-                    <Button variant="outline" size="sm">
-                      View All Reports
+                {recentVerifications.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground mb-4">No verifications yet</p>
+                    <Button onClick={() => navigate('/verify')}>
+                      Start Your First Verification
                     </Button>
-                  </Link>
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    {recentVerifications.map((verification: any) => (
+                      <div key={verification.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/20">
+                        <div>
+                          <p className="font-medium">
+                            {verification.content.length > 50 
+                              ? `${verification.content.substring(0, 50)}...` 
+                              : verification.content
+                            }
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(verification.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant={verification.is_ai_generated ? "destructive" : "default"}>
+                          {verification.is_ai_generated ? "AI Generated" : "Human Written"}
+                        </Badge>
+                      </div>
+                    ))}
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => navigate('/reports')}
+                    >
+                      View All Reports ({verificationCount})
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

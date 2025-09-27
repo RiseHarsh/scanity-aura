@@ -3,44 +3,81 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Download, Eye, Calendar, TrendingUp } from "lucide-react";
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Report {
   id: string;
-  timestamp: string;
+  created_at: string;
   content: string;
-  isAiGenerated: boolean;
+  is_ai_generated: boolean;
   confidence: number;
-  blockchainHash: string;
+  blockchain_hash: string | null;
 }
 
-const mockReports: Report[] = [
-  {
-    id: "1",
-    timestamp: "2024-01-15T10:30:00Z",
-    content: "Advanced machine learning algorithms for predictive analytics...",
-    isAiGenerated: false,
-    confidence: 92,
-    blockchainHash: "0xa1b2c3d4e5f6789012345678901234567890abcd"
-  },
-  {
-    id: "2",
-    timestamp: "2024-01-14T15:45:00Z",
-    content: "The integration of artificial intelligence in modern healthcare...",
-    isAiGenerated: true,
-    confidence: 87,
-    blockchainHash: "0xb2c3d4e5f6789012345678901234567890abcde1"
-  },
-  {
-    id: "3",
-    timestamp: "2024-01-13T09:15:00Z",
-    content: "Blockchain technology revolutionizes digital trust systems...",
-    isAiGenerated: false,
-    confidence: 94,
-    blockchainHash: "0xc3d4e5f6789012345678901234567890abcde12f"
-  }
-];
-
 export default function Reports() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    accuracy: 0,
+    thisMonth: 0
+  });
+
+  if (!user) {
+    navigate('/auth');
+    return null;
+  }
+
+  useEffect(() => {
+    loadUserReports();
+  }, [user]);
+
+  const loadUserReports = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('verifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading reports:', error);
+        return;
+      }
+
+      setReports(data || []);
+      
+      // Calculate stats
+      const total = data?.length || 0;
+      const thisMonth = data?.filter(report => {
+        const reportDate = new Date(report.created_at);
+        const now = new Date();
+        return reportDate.getMonth() === now.getMonth() && 
+               reportDate.getFullYear() === now.getFullYear();
+      }).length || 0;
+      
+      const avgConfidence = total > 0 
+        ? data.reduce((sum, report) => sum + report.confidence, 0) / total 
+        : 0;
+      
+      setStats({
+        total,
+        accuracy: Math.round(avgConfidence * 10) / 10,
+        thisMonth
+      });
+    } catch (error) {
+      console.error('Error loading user reports:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -66,7 +103,7 @@ export default function Reports() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 mb-4">
                 <TrendingUp className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">156</h3>
+              <h3 className="text-2xl font-bold mb-2">{stats.total}</h3>
               <p className="text-muted-foreground">Total Verifications</p>
             </Card>
             
@@ -74,15 +111,15 @@ export default function Reports() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/20 mb-4">
                 <Eye className="w-6 h-6 text-accent" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">94.2%</h3>
-              <p className="text-muted-foreground">Accuracy Rate</p>
+              <h3 className="text-2xl font-bold mb-2">{stats.accuracy}%</h3>
+              <p className="text-muted-foreground">Avg Confidence</p>
             </Card>
             
             <Card className="glass-panel p-6 text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 mb-4">
                 <Calendar className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">24</h3>
+              <h3 className="text-2xl font-bold mb-2">{stats.thisMonth}</h3>
               <p className="text-muted-foreground">This Month</p>
             </Card>
           </div>
@@ -97,7 +134,22 @@ export default function Reports() {
               </Button>
             </div>
 
-            {mockReports.map((report, index) => (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-neural-pulse text-primary text-xl">Loading your reports...</div>
+              </div>
+            ) : reports.length === 0 ? (
+              <Card className="glass-panel p-8 text-center">
+                <h3 className="text-xl font-semibold mb-2">No verifications yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start verifying content to see your reports here.
+                </p>
+                <Button onClick={() => navigate('/verify')}>
+                  Start Verification
+                </Button>
+              </Card>
+            ) : (
+              reports.map((report, index) => (
               <Card key={report.id} className="glass-panel p-6 hover:shadow-neural transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-4">
@@ -106,14 +158,14 @@ export default function Reports() {
                       <div className="flex items-center space-x-3">
                         <div className="w-3 h-3 rounded-full bg-primary animate-neural-pulse" />
                         <span className="text-sm text-muted-foreground">
-                          {new Date(report.timestamp).toLocaleString()}
+                          {new Date(report.created_at).toLocaleString()}
                         </span>
                       </div>
                       <Badge 
-                        variant={report.isAiGenerated ? "destructive" : "default"}
+                        variant={report.is_ai_generated ? "destructive" : "default"}
                         className="animate-hologram-flicker"
                       >
-                        {report.isAiGenerated ? "AI Generated" : "Human Written"}
+                        {report.is_ai_generated ? "AI Generated" : "Human Written"}
                       </Badge>
                     </div>
 
@@ -143,7 +195,7 @@ export default function Reports() {
                         <div>
                           <span className="text-sm text-muted-foreground">Blockchain Hash</span>
                           <p className="text-sm font-mono text-accent mt-1">
-                            {report.blockchainHash.substring(0, 20)}...
+                            {report.blockchain_hash ? `${report.blockchain_hash.substring(0, 20)}...` : 'Not available'}
                           </p>
                         </div>
                       </div>
@@ -156,7 +208,8 @@ export default function Reports() {
                   </div>
                 </div>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </main>
