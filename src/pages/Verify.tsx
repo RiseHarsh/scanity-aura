@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Scan, Shield, Copy, CheckCircle, AlertCircle, Info, ChevronDown, Brain, Lock, Clock, TrendingUp, Download, Zap, ExternalLink, Globe, BarChart3 } from "lucide-react";
+import { Scan, Shield, Copy, CheckCircle, AlertCircle, Info, ChevronDown, Brain, Lock, Clock, TrendingUp, Download, Zap, ExternalLink, Globe, BarChart3, Upload, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface ModelPrediction {
   name: string;
@@ -41,6 +42,8 @@ export default function Verify() {
   const [text, setText] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const { toast } = useToast();
 
   const simulateGoogleSearch = async (content: string): Promise<WebReference[]> => {
@@ -144,6 +147,57 @@ export default function Verify() {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingFile(true);
+    setUploadedFileName(file.name);
+
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        
+        // For text files, use content directly
+        if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+          setText(content);
+          toast({
+            title: "Document Uploaded",
+            description: `${file.name} loaded successfully`,
+          });
+        } else {
+          // For other files, show placeholder text
+          setText(`Document uploaded: ${file.name}\n\nThis is a ${file.type || 'binary'} file. In production, this would be processed using advanced document parsing.\n\nFile size: ${(file.size / 1024).toFixed(2)} KB\nType: ${file.type || 'Unknown'}`);
+          toast({
+            title: "Document Uploaded",
+            description: `${file.name} uploaded. Text extraction simulated.`,
+          });
+        }
+        setIsProcessingFile(false);
+      };
+
+      reader.onerror = () => {
+        toast({
+          title: "Upload Failed",
+          description: "Failed to read the document",
+          variant: "destructive",
+        });
+        setIsProcessingFile(false);
+      };
+
+      reader.readAsText(file);
+    } catch (error) {
+      toast({
+        title: "Upload Error",
+        description: "An error occurred while processing the document",
+        variant: "destructive",
+      });
+      setIsProcessingFile(false);
+    }
+  };
+
   const downloadReport = () => {
     if (!result) return;
     
@@ -161,7 +215,8 @@ export default function Verify() {
       content: {
         textLength: text.length,
         wordsCount: text.trim().split(/\s+/).length,
-        analysisDate: new Date().toLocaleString()
+        analysisDate: new Date().toLocaleString(),
+        sourceDocument: uploadedFileName || "Direct Text Input"
       }
     };
 
@@ -182,6 +237,7 @@ MULTI-MODEL ANALYSIS
 ├─ Overall Confidence: ${reportData.analysis.confidence}
 ├─ Majority Vote: ${result.majorityVote.aiGenerated} AI vs ${result.majorityVote.humanWritten} Human
 ├─ Analysis Date: ${reportData.analysis.timestamp}
+├─ Source: ${reportData.content.sourceDocument}
 ├─ Text Length: ${reportData.content.textLength} characters
 └─ Word Count: ${reportData.content.wordsCount} words
 
@@ -209,15 +265,15 @@ Report ID: ${result.blockchainHash.slice(0, 16)}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `scanit-advanced-report-${result.blockchainHash.slice(0, 8)}.txt`;
+    a.download = `scanit-verification-report-${result.blockchainHash.slice(0, 8)}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Advanced Report Downloaded",
-      description: "Multi-model verification report saved successfully",
+      title: "Report Downloaded",
+      description: "Verification report saved successfully",
     });
   };
 
@@ -244,10 +300,40 @@ Report ID: ${result.blockchainHash.slice(0, 16)}
           <div className="max-w-4xl mx-auto">
             <Card className="glass-panel p-8 mb-8">
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-3 text-foreground">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-foreground">
                     Content to Verify
                   </label>
+                  <div className="flex gap-2">
+                    <label htmlFor="file-upload">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isProcessingFile || isVerifying}
+                        className="cursor-pointer"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {isProcessingFile ? "Processing..." : "Upload Document"}
+                      </Button>
+                    </label>
+                    <Input
+                      id="file-upload"
+                      type="file"
+                      className="hidden"
+                      accept=".txt,.doc,.docx,.pdf,.md"
+                      onChange={handleFileUpload}
+                    />
+                  </div>
+                </div>
+                {uploadedFileName && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded-md">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <span>Uploaded: {uploadedFileName}</span>
+                  </div>
+                )}
+                <div>
                     <div className="relative">
                       <Textarea
                         value={text}
@@ -283,7 +369,7 @@ Report ID: ${result.blockchainHash.slice(0, 16)}
                 
                 <Button
                   onClick={handleVerify}
-                  disabled={!text.trim() || isVerifying}
+                  disabled={!text.trim() || isVerifying || isProcessingFile}
                   size="lg"
                   className={`w-full relative overflow-hidden transition-all duration-500 ${
                     isVerifying 
@@ -415,6 +501,17 @@ Report ID: ${result.blockchainHash.slice(0, 16)}
             {/* Results */}
             {result && (
               <Card className="glass-panel p-8 animate-fade-in">
+                <div className="flex justify-end mb-4">
+                  <Button
+                    onClick={downloadReport}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Report
+                  </Button>
+                </div>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
