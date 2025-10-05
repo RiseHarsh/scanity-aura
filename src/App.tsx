@@ -3,61 +3,74 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./hooks/useAuth";
-import { AuthGuard } from "./components/AuthGuard";
+import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import Index from "./pages/Index";
 import Verify from "./pages/Verify";
-import Reports from "./pages/Reports";
+import Dashboard from "./pages/Dashboard";
 import BlockchainExplorer from "./pages/BlockchainExplorer";
 import About from "./pages/About";
 import ModelDetails from "./pages/ModelDetails";
-import Auth from "./pages/Auth";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const queryClient = new QueryClient();
 
+if (!CLERK_PUBLISHABLE_KEY) {
+  throw new Error("Missing Clerk Publishable Key");
+}
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
+  <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/profile" element={
-              <AuthGuard>
-                <Profile />
-              </AuthGuard>
-            } />
-            <Route path="/settings" element={
-              <AuthGuard>
-                <Settings />
-              </AuthGuard>
-            } />
             <Route path="/" element={<Index />} />
-            <Route path="/verify" element={
-              <AuthGuard>
-                <Verify />
-              </AuthGuard>
-            } />
-            <Route path="/reports" element={
-              <AuthGuard>
-                <Reports />
-              </AuthGuard>
-            } />
-            <Route path="/explorer" element={<BlockchainExplorer />} />
-            <Route path="/models" element={<ModelDetails />} />
             <Route path="/about" element={<About />} />
+            <Route path="/models" element={<ModelDetails />} />
+            
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+              <>
+                <SignedIn>
+                  <Dashboard />
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
+              </>
+            } />
+            <Route path="/verify" element={
+              <>
+                <SignedIn>
+                  <Verify />
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
+              </>
+            } />
+            <Route path="/explorer" element={
+              <>
+                <SignedIn>
+                  <BlockchainExplorer />
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
+              </>
+            } />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ClerkProvider>
 );
 
 export default App;

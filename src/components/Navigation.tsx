@@ -1,66 +1,21 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Scan, Shield, BarChart3, Blocks, Info, Brain, User, ChevronDown, Menu, Settings, LayoutDashboard, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { Shield, Info, Brain, ChevronDown, Menu, Blocks } from "lucide-react";
+import { SignInButton, SignUpButton, useUser, UserButton } from "@clerk/clerk-react";
 import { useState } from "react";
 
 export const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { toast } = useToast();
+  const { isSignedIn, user } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const handleVerifyClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      navigate('/auth');
-      toast({
-        title: "Login Required",
-        description: "Please log in to verify content.",
-        variant: "default",
-      });
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      });
-      navigate('/');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Main navigation items
-  const mainNavItems = [
-    { path: "/", label: "Home", icon: Shield },
-    { path: "/explorer", label: "Explore", icon: Blocks }
-  ];
 
   // Info dropdown items
   const infoItems = [
     { path: "/about", label: "About", icon: Info },
     { path: "/models", label: "Models", icon: Brain }
-  ];
-
-  // Auth-protected items
-  const protectedNavItems = user ? [
-    { path: "/verify", label: "Verify", icon: Scan },
-    { path: "/reports", label: "Reports", icon: BarChart3 }
-  ] : [
-    { path: "/verify", label: "Verify", icon: Scan, onClick: handleVerifyClick }
   ];
 
   return (
@@ -77,19 +32,17 @@ export const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1">
-            {/* Main nav items */}
-            {mainNavItems.map(({ path, label, icon: Icon }) => (
-              <Link key={path} to={path}>
-                <Button 
-                  variant={location.pathname === path ? "default" : "ghost"}
-                  size="sm" 
-                  className="flex items-center space-x-2 transition-all duration-300 hover:bg-primary/10"
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{label}</span>
-                </Button>
-              </Link>
-            ))}
+            {/* Home */}
+            <Link to="/">
+              <Button 
+                variant={location.pathname === "/" ? "default" : "ghost"}
+                size="sm" 
+                className="flex items-center space-x-2 transition-all duration-300 hover:bg-primary/10"
+              >
+                <Shield className="w-4 h-4" />
+                <span>Home</span>
+              </Button>
+            </Link>
 
             {/* Info Dropdown */}
             <DropdownMenu>
@@ -112,19 +65,19 @@ export const Navigation = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Protected nav items */}
-            {protectedNavItems.map(({ path, label, icon: Icon, onClick }) => (
-              <Link key={path} to={path} onClick={onClick}>
+            {/* Explore Blockchain - Only for logged in users */}
+            {isSignedIn && (
+              <Link to="/explorer">
                 <Button 
-                  variant={location.pathname === path ? "default" : "ghost"}
+                  variant={location.pathname === "/explorer" ? "default" : "ghost"}
                   size="sm" 
                   className="flex items-center space-x-2 transition-all duration-300 hover:bg-primary/10"
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{label}</span>
+                  <Blocks className="w-4 h-4" />
+                  <span>Explore Blockchain</span>
                 </Button>
               </Link>
-            ))}
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -137,18 +90,16 @@ export const Navigation = () => {
               </SheetTrigger>
               <SheetContent side="right" className="glass-panel border-primary/20">
                 <div className="flex flex-col space-y-4 mt-8">
-                  {mainNavItems.map(({ path, label, icon: Icon }) => (
-                    <Link key={path} to={path} onClick={() => setMobileOpen(false)}>
-                      <Button 
-                        variant={location.pathname === path ? "default" : "ghost"}
-                        size="sm" 
-                        className="w-full justify-start space-x-2"
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{label}</span>
-                      </Button>
-                    </Link>
-                  ))}
+                  <Link to="/" onClick={() => setMobileOpen(false)}>
+                    <Button 
+                      variant={location.pathname === "/" ? "default" : "ghost"}
+                      size="sm" 
+                      className="w-full justify-start space-x-2"
+                    >
+                      <Shield className="w-4 h-4" />
+                      <span>Home</span>
+                    </Button>
+                  </Link>
                   
                   <div className="py-2">
                     <p className="text-sm font-medium text-muted-foreground mb-2">Information</p>
@@ -162,21 +113,18 @@ export const Navigation = () => {
                     ))}
                   </div>
 
-                  {protectedNavItems.map(({ path, label, icon: Icon, onClick }) => (
-                    <Link key={path} to={path} onClick={(e) => {
-                      setMobileOpen(false);
-                      onClick?.(e);
-                    }}>
+                  {isSignedIn && (
+                    <Link to="/explorer" onClick={() => setMobileOpen(false)}>
                       <Button 
-                        variant={location.pathname === path ? "default" : "ghost"}
+                        variant={location.pathname === "/explorer" ? "default" : "ghost"}
                         size="sm" 
                         className="w-full justify-start space-x-2"
                       >
-                        <Icon className="w-4 h-4" />
-                        <span>{label}</span>
+                        <Blocks className="w-4 h-4" />
+                        <span>Explore Blockchain</span>
                       </Button>
                     </Link>
-                  ))}
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -184,52 +132,21 @@ export const Navigation = () => {
 
           {/* User Actions */}
           <div className="flex items-center space-x-2">
-            {/* Start Verification - Always visible */}
-            <Link to="/verify" onClick={handleVerifyClick}>
-              <Button size="sm" className="neon-border bg-gradient-primary hover:shadow-neon transition-all duration-300">
-                <span className="hidden sm:inline">Start Verification</span>
-                <span className="sm:hidden">Verify</span>
-              </Button>
-            </Link>
-
-            {user ? (
-              /* Profile Dropdown */
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">Profile</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="glass-panel border-primary/20">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center space-x-2 w-full">
-                      <LayoutDashboard className="w-4 h-4" />
-                      <span>Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="flex items-center space-x-2 w-full">
-                      <Settings className="w-4 h-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="flex items-center space-x-2 w-full text-destructive">
-                    <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            {isSignedIn ? (
+              <UserButton afterSignOutUrl="/" />
             ) : (
-              /* Login/Sign Up */
-              <Link to="/auth">
-                <Button variant="outline" size="sm">
-                  <span className="hidden sm:inline">Login / Sign Up</span>
-                  <span className="sm:hidden">Login</span>
-                </Button>
-              </Link>
+              <div className="flex items-center space-x-2">
+                <SignInButton mode="modal">
+                  <Button variant="ghost" size="sm">
+                    Login
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button variant="outline" size="sm">
+                    Sign Up
+                  </Button>
+                </SignUpButton>
+              </div>
             )}
           </div>
         </div>
