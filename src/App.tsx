@@ -12,13 +12,11 @@ import About from "./pages/About";
 import ModelDetails from "./pages/ModelDetails";
 import NotFound from "./pages/NotFound";
 
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// Add your Clerk Publishable Key here (get it from https://dashboard.clerk.com)
+// This is a PUBLIC key and safe to commit to your codebase
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_placeholder";
 
 const queryClient = new QueryClient();
-
-if (!CLERK_PUBLISHABLE_KEY) {
-  throw new Error("Missing Clerk Publishable Key");
-}
 
 const App = () => (
   <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
