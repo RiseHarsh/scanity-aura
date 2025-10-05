@@ -5,8 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import Index from "./pages/Index";
-import Verify from "./pages/Verify";
-import Dashboard from "./pages/Dashboard";
 import BlockchainExplorer from "./pages/BlockchainExplorer";
 import About from "./pages/About";
 import ModelDetails from "./pages/ModelDetails";
@@ -31,26 +29,6 @@ const App = () => (
             <Route path="/models" element={<ModelDetails />} />
             
             {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <>
-                <SignedIn>
-                  <Dashboard />
-                </SignedIn>
-                <SignedOut>
-                  <RedirectToSignIn />
-                </SignedOut>
-              </>
-            } />
-            <Route path="/verify" element={
-              <>
-                <SignedIn>
-                  <Verify />
-                </SignedIn>
-                <SignedOut>
-                  <RedirectToSignIn />
-                </SignedOut>
-              </>
-            } />
             <Route path="/explorer" element={
               <>
                 <SignedIn>
